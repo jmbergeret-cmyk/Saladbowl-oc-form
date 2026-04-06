@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recepción de Mercadería — Saladbowl</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 700px;
+      margin: 0 auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+
+    h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; color: #111; }
+
+    .section-title {
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #888;
+      margin: 20px 0 10px;
+    }
+
+    label { display: block; font-size: .9rem; font-weight: 500; margin-bottom: 4px; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .95rem;
+      outline: none;
+      transition: border-color .15s;
+      background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #4a90e2; }
+    input[readonly] { background: #f9f9f9; color: #555; }
+
+    .field { margin-bottom: 14px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* OC info box */
+    .oc-info {
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: .88rem;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .oc-info strong { color: #333; }
+
+    /* Items table */
+    .items-header {
+      display: grid;
+      grid-template-columns: 2fr 80px 80px 80px 100px;
+      gap: 6px;
+      font-size: .72rem;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 0 4px 6px;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 2fr 80px 80px 80px 100px;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .item-row input { padding: 9px 10px; font-size: .88rem; }
+
+    .qty-ok   { border-color: #4caf50 !important; background: #f1fff3 !important; }
+    .qty-diff { border-color: #f59e0b !important; background: #fffbeb !important; }
+
+    .btn-submit {
+      width: 100%;
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background .15s;
+    }
+    .btn-submit:hover { background: #444; }
+    .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 14px;
+      font-size: .9rem;
+      display: none;
+    }
+    .status.loading { display: block; background: #f0f4ff; color: #4a90e2; }
+    .status.success { display: block; background: #e8f8ed; color: #2e7d4f; }
+    .status.error   { display: block; background: #fff0f0; color: #c0392b; }
+
+    .loader { text-align: center; padding: 40px; color: #aaa; font-size: .9rem; }
+
+    /* File input styling */
+    .file-label {
+      display: block;
+      border: 1.5px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      color: #666;
+      font-size: .9rem;
+      transition: all .15s;
+    }
+    .file-label:hover { border-color: #4a90e2; color: #4a90e2; }
+    .file-label.has-file { border-color: #4caf50; color: #2e7d4f; background: #f1fff3; }
+    input[type="file"] { display: none; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .9rem;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    @media (max-width: 500px) {
+      .items-header { grid-template-columns: 1.5fr 70px 70px 70px 90px; font-size: .65rem; }
+      .item-row     { grid-template-columns: 1.5fr 70px 70px 70px 90px; }
+      .grid-2       { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📦 Recepción de Mercadería</h1>
+
+  <div id="form-loader" class="loader">Cargando órdenes pendientes…</div>
+
+  <form id="recepcion-form" style="display:none" novalidate>
+
+    <p class="section-title">Orden de Compra</p>
+
+    <div class="field">
+      <label for="oc-select">OC pendiente *</label>
+      <select id="oc-select" required>
+        <option value="">— Seleccioná la OC a recibir —</option>
+      </select>
+    </div>
+
+    <div id="oc-info" class="oc-info" style="display:none"></div>
+
+    <div id="items-section" style="display:none">
+
+      <p class="section-title">Ítems recibidos</p>
+
+      <div class="items-header">
+        <span>Producto</span>
+        <span>Pedido</span>
+        <span>Recibido</span>
+        <span>Precio fact.</span>
+        <span>Observación</span>
+      </div>
+
+      <div id="items-container"></div>
+
+      <p class="section-title">Recepción</p>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="recibido_por">Recibió *</label>
+          <input type="text" id="recibido_por" placeholder="Tu nombre" required />
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;padding-bottom:14px">
+          <div class="checkbox-row">
+            <input type="checkbox" id="conforme" checked />
+            <label for="conforme" style="margin:0;cursor:pointer">Recepción conforme</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notas">Diferencias / notas</label>
+        <textarea id="notas" rows="2" placeholder="Ej: Faltaron 2 kg de lechugas, llegó sin remito, etc."></textarea>
+      </div>
+
+      <p class="section-title">Foto del remito</p>
+
+      <div class="field">
+        <label for="foto" class="file-label" id="foto-label">
+          📷 Tocá para sacar foto o seleccionar imagen
+        </label>
+        <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">Confirmar Recepción</button>
+
+      <div class="status" id="status"></div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  const PENDIENTES_URL = 'https://juanautomatationai.app.n8n.cloud/webhook/wf2-pendientes';
+  const SUBMIT_URL     = 'https://juanautomatationai.app.n8n.cloud/webhook/wf2-recepcion';
+
+  let ocs = [];
+  let selectedOC = null;
+
+  // ── Cargar OC pendientes ─────────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const res  = await fetch(PENDIENTES_URL);
+      const data = await res.json();
+      ocs = data.ocs || [];
+
+      if (ocs.length === 0) {
+        document.getElementById('form-loader').textContent =
+          '✅ No hay órdenes de compra pendientes de recepción.';
+        return;
+      }
+
+      const sel = document.getElementById('oc-select');
+      ocs.forEach(oc => {
+        const opt = document.createElement('option');
+        opt.value = oc.page_id;
+        const fecha = oc.fecha_entrega ? ` · ${oc.fecha_entrega}` : '';
+        opt.textContent = `${oc.oc_id} — ${oc.proveedor}${fecha} (${oc.local})`;
+        sel.appendChild(opt);
+      });
+
+      document.getElementById('form-loader').style.display = 'none';
+      document.getElementById('recepcion-form').style.display = 'block';
+
+      sel.addEventListener('change', onOCChange);
+    } catch (e) {
+      document.getElementById('form-loader').textContent =
+        '⚠️ Error al cargar datos. Recargá la página.';
+    }
+  }
+
+  // ── Selección de OC ──────────────────────────────────────────────────────────
+  function onOCChange() {
+    const pageId = document.getElementById('oc-select').value;
+    selectedOC = ocs.find(oc => oc.page_id === pageId) || null;
+
+    const infoDiv    = document.getElementById('oc-info');
+    const itemsSec   = document.getElementById('items-section');
+    const container  = document.getElementById('items-container');
+
+    if (!selectedOC) {
+      infoDiv.style.display  = 'none';
+      itemsSec.style.display = 'none';
+      return;
+    }
+
+    // Info box
+    const fecha = selectedOC.fecha_entrega || '—';
+    const total = selectedOC.total_estimado > 0
+      ? `$${selectedOC.total_estimado.toLocaleString('es-AR')}`
+      : '—';
+    infoDiv.innerHTML = `
+      <strong>Proveedor:</strong> ${selectedOC.proveedor} &nbsp;|&nbsp;
+      <strong>Local:</strong> ${selectedOC.local}<br>
+      <strong>Entrega estimada:</strong> ${fecha} &nbsp;|&nbsp;
+      <strong>Total estimado:</strong> ${total}
+    `;
+    infoDiv.style.display = 'block';
+
+    // Items
+    container.innerHTML = '';
+    selectedOC.lineas.forEach(linea => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.dataset.lineaId  = linea.page_id;
+      row.dataset.producto = linea.producto;
+      row.dataset.pedido   = linea.cantidad_pedida;
+      row.dataset.unidad   = linea.unidad;
+
+      const nombreEl = document.createElement('input');
+      nombreEl.type     = 'text';
+      nombreEl.value    = linea.producto;
+      nombreEl.readOnly = true;
+
+      const pedidoEl = document.createElement('input');
+      pedidoEl.type     = 'number';
+      pedidoEl.value    = linea.cantidad_pedida;
+      pedidoEl.readOnly = true;
+
+      const recibidoEl = document.createElement('input');
+      recibidoEl.type        = 'number';
+      recibidoEl.className   = 'recibido-inp';
+      recibidoEl.value       = linea.cantidad_pedida;
+      recibidoEl.min         = '0';
+      recibidoEl.step        = 'any';
+      recibidoEl.classList.add('qty-ok');
+      recibidoEl.addEventListener('input', () => {
+        const diff = parseFloat(recibidoEl.value) !== linea.cantidad_pedida;
+        recibidoEl.className = 'recibido-inp ' + (diff ? 'qty-diff' : 'qty-ok');
+      });
+
+      const precioEl = document.createElement('input');
+      precioEl.type        = 'number';
+      precioEl.className   = 'precio-inp';
+      precioEl.value       = linea.precio_unitario || '';
+      precioEl.placeholder = '0';
+      precioEl.min         = '0';
+      precioEl.step        = 'any';
+
+      const obsEl = document.createElement('input');
+      obsEl.type        = 'text';
+      obsEl.className   = 'obs-inp';
+      obsEl.placeholder = '—';
+
+      row.appendChild(nombreEl);
+      row.appendChild(pedidoEl);
+      row.appendChild(recibidoEl);
+      row.appendChild(precioEl);
+      row.appendChild(obsEl);
+      container.appendChild(row);
+    });
+
+    itemsSec.style.display = 'block';
+  }
+
+  // ── Foto preview ─────────────────────────────────────────────────────────────
+  document.getElementById('foto').addEventListener('change', function() {
+    const label = document.getElementById('foto-label');
+    if (this.files && this.files[0]) {
+      label.textContent = `✅ ${this.files[0].name}`;
+      label.classList.add('has-file');
+    } else {
+      label.textContent = '📷 Tocá para sacar foto o seleccionar imagen';
+      label.classList.remove('has-file');
+    }
+  });
+
+  // ── Envío del formulario ─────────────────────────────────────────────────────
+  document.getElementById('recepcion-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const recibidoPor = document.getElementById('recibido_por').value.trim();
+    const notas       = document.getElementById('notas').value.trim();
+    const conforme    = document.getElementById('conforme').checked;
+    const fotoFile    = document.getElementById('foto').files[0];
+    const statusDiv   = document.getElementById('status');
+    const btnSubmit   = document.getElementById('btn-submit');
+
+    if (!selectedOC) { alert('Seleccioná una OC.'); return; }
+    if (!recibidoPor) { alert('Ingresá tu nombre.'); return; }
+    if (!fotoFile)    { alert('Adjuntá la foto del remito.'); return; }
+
+    // Recopilar ítems
+    const rows  = document.querySelectorAll('#items-container .item-row');
+    const items = [];
+    rows.forEach(row => {
+      items.push({
+        linea_page_id:    row.dataset.lineaId,
+        producto:         row.dataset.producto,
+        cantidad_pedida:  parseFloat(row.dataset.pedido),
+        unidad:           row.dataset.unidad,
+        cantidad_recibida: parseFloat(row.querySelector('.recibido-inp').value) || 0,
+        precio_facturado: parseFloat(row.querySelector('.precio-inp').value) || 0,
+        observacion:      row.querySelector('.obs-inp').value.trim()
+      });
+    });
+
+    // FormData (multipart)
+    const fd = new FormData();
+    fd.append('oc_page_id',   selectedOC.page_id);
+    fd.append('oc_id',        selectedOC.oc_id);
+    fd.append('recibido_por', recibidoPor);
+    fd.append('notas',        notas);
+    fd.append('conforme',     conforme ? 'true' : 'false');
+    fd.append('items',        JSON.stringify(items));
+    fd.append('foto',         fotoFile);
+
+    btnSubmit.disabled  = true;
+    statusDiv.className = 'status loading';
+    statusDiv.textContent = 'Registrando recepción…';
+
+    try {
+      const res = await fetch(SUBMIT_URL, { method: 'POST', body: fd });
+
+      if (res.ok) {
+        statusDiv.className   = 'status success';
+        statusDiv.textContent = '✅ Recepción registrada correctamente. Juan recibirá una notificación.';
+        document.getElementById('recepcion-form').reset();
+        document.getElementById('oc-info').style.display   = 'none';
+        document.getElementById('items-section').style.display = 'none';
+        document.getElementById('foto-label').textContent = '📷 Tocá para sacar foto o seleccionar imagen';
+        document.getElementById('foto-label').classList.remove('has-file');
+        selectedOC = null;
+      } else {
+        throw new Error('HTTP ' + res.status);
+      }
+    } catch (err) {
+      statusDiv.className   = 'status error';
+      statusDiv.textContent = '❌ Error al registrar. Intentá de nuevo o avisá a Juan.';
+      btnSubmit.disabled    = false;
+    }
+  });
+
+  // Iniciar
+  loadData();
+</script>
+</body>
+</html>
