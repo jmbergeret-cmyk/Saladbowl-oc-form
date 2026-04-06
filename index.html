@@ -179,9 +179,6 @@
         <label for="local">Local de recepción *</label>
         <select id="local" required>
           <option value="">— Seleccioná —</option>
-          <option>Local 1</option>
-          <option>Local 2</option>
-          <option>Local 3</option>
         </select>
       </div>
       <div class="field">
@@ -241,14 +238,50 @@
         sel.appendChild(opt);
       });
 
+      // Poblar dropdown local
+      const selLocal = document.getElementById('local');
+      (data.locales || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = l;
+        selLocal.appendChild(opt);
+      });
+
       document.getElementById('form-loader').style.display = 'none';
       document.getElementById('oc-form').style.display     = 'block';
+
+      // Cuando cambia el proveedor, actualizar dropdowns de insumos en todas las filas
+      document.getElementById('proveedor').addEventListener('change', () => {
+        document.querySelectorAll('.insumo-sel').forEach(sel => refreshInsumoOptions(sel));
+      });
 
       addRow(); // primera fila vacía
     } catch (e) {
       document.getElementById('form-loader').textContent =
         '⚠️ Error al cargar datos. Recargá la página.';
     }
+  }
+
+  // ── Devuelve los insumos filtrados por proveedor seleccionado ───────────────
+  function getInsumosFiltrados() {
+    const provId = document.getElementById('proveedor').value;
+    if (!provId) return insumos; // sin proveedor → mostrar todos
+    return insumos.filter(ins => !ins.proveedor_id || ins.proveedor_id === provId);
+  }
+
+  // ── Recarga las opciones de un select de insumo ─────────────────────────────
+  function refreshInsumoOptions(sel) {
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">— Insumo —</option>';
+    getInsumosFiltrados().forEach(ins => {
+      const opt = document.createElement('option');
+      opt.value = ins.id;
+      opt.dataset.nombre = ins.nombre;
+      opt.dataset.unidad = ins.unidad;
+      opt.dataset.precio = ins.precio;
+      opt.textContent = ins.nombre;
+      sel.appendChild(opt);
+    });
+    sel.value = currentVal; // mantener selección si sigue siendo válida
   }
 
   // ── Agregar fila de ítem ────────────────────────────────────────────────────
@@ -260,11 +293,11 @@
     row.className = 'item-row';
     row.dataset.idx = idx;
 
-    // Dropdown insumos
+    // Dropdown insumos (filtrado por proveedor actual)
     const selInsumo = document.createElement('select');
     selInsumo.className  = 'insumo-sel';
     selInsumo.innerHTML  = '<option value="">— Insumo —</option>';
-    insumos.forEach(ins => {
+    getInsumosFiltrados().forEach(ins => {
       const opt = document.createElement('option');
       opt.value = ins.id;
       opt.dataset.nombre = ins.nombre;
