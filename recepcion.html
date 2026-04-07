@@ -196,11 +196,16 @@
           <label for="recibido_por">Recibió *</label>
           <input type="text" id="recibido_por" placeholder="Tu nombre" required />
         </div>
-        <div class="field" style="display:flex;align-items:flex-end;padding-bottom:14px">
-          <div class="checkbox-row">
-            <input type="checkbox" id="conforme" checked />
-            <label for="conforme" style="margin:0;cursor:pointer">Recepción conforme</label>
-          </div>
+        <div class="field">
+          <label for="nro_factura">Número de factura</label>
+          <input type="text" id="nro_factura" placeholder="Ej: 0001-00004567" />
+        </div>
+      </div>
+
+      <div class="field" style="display:flex;align-items:center;padding-bottom:14px">
+        <div class="checkbox-row">
+          <input type="checkbox" id="conforme" checked />
+          <label for="conforme" style="margin:0;cursor:pointer">Recepción conforme</label>
         </div>
       </div>
 
@@ -367,6 +372,7 @@
     e.preventDefault();
 
     const recibidoPor = document.getElementById('recibido_por').value.trim();
+    const nroFactura  = document.getElementById('nro_factura').value.trim();
     const notas       = document.getElementById('notas').value.trim();
     const conforme    = document.getElementById('conforme').checked;
     const fotoFile    = document.getElementById('foto').files[0];
@@ -397,6 +403,7 @@
     fd.append('oc_page_id',   selectedOC.page_id);
     fd.append('oc_id',        selectedOC.oc_id);
     fd.append('recibido_por', recibidoPor);
+    fd.append('nro_factura',  nroFactura);
     fd.append('notas',        notas);
     fd.append('conforme',     conforme ? 'true' : 'false');
     fd.append('items',        JSON.stringify(items));
