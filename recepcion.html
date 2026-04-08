@@ -198,7 +198,7 @@
         </div>
         <div class="field">
           <label for="nro_factura">Número de factura</label>
-          <input type="text" id="nro_factura" placeholder="Ej: 0001-00004567" />
+          <input type="text" id="nro_factura" placeholder="Ej: 0001-00004567" required />
         </div>
       </div>
 
@@ -381,6 +381,7 @@
 
     if (!selectedOC) { alert('Seleccioná una OC.'); return; }
     if (!recibidoPor) { alert('Ingresá tu nombre.'); return; }
+    if (!nroFactura)  { alert('Ingresá el número de factura.'); return; }
     if (!fotoFile)    { alert('Adjuntá la foto del remito.'); return; }
 
     // Recopilar ítems
