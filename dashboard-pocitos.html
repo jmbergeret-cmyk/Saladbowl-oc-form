@@ -425,6 +425,18 @@
         empty.textContent = 'No hay entregas programadas para hoy.';
         frag.appendChild(empty);
       }
+
+      const sinFecha = allOCs.filter(oc => !oc.fecha_entrega);
+      if (sinFecha.length > 0) {
+        const labelSF = document.createElement('p');
+        labelSF.className = 'section-label';
+        labelSF.textContent = 'Sin fecha de entrega';
+        frag.appendChild(labelSF);
+        const grid = document.createElement('div');
+        grid.className = 'hoy-grid';
+        sinFecha.forEach(oc => grid.appendChild(makeOCCard(oc)));
+        frag.appendChild(grid);
+      }
     }
 
     frag.appendChild(makeWeekCalendar(allOCs));
