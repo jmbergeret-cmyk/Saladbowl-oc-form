@@ -178,19 +178,19 @@
 
   <form id="oc-form" style="display:none" novalidate>
 
-    <div class="plantilla-banner" id="plantilla-banner" style="display:none">
-      <label for="plantilla">⚡ Plantilla</label>
-      <select id="plantilla" onchange="applyPlantilla(this.value)">
-        <option value="">— Cargar desde plantilla (opcional) —</option>
-      </select>
-    </div>
-
     <p class="section-title">Proveedor y entrega</p>
 
     <div class="field">
       <label for="proveedor">Proveedor *</label>
       <select id="proveedor" required>
         <option value="">— Seleccioná un proveedor —</option>
+      </select>
+    </div>
+
+    <div class="plantilla-banner" id="plantilla-banner" style="display:none">
+      <label for="plantilla">⚡ Plantilla</label>
+      <select id="plantilla" onchange="applyPlantilla(this.value)">
+        <option value="">— Cargar desde plantilla (opcional) —</option>
       </select>
     </div>
 
@@ -260,17 +260,7 @@
         sel.appendChild(opt);
       });
 
-      // Poblar dropdown plantillas
-      if (plantillas.length > 0) {
-        const selPlant = document.getElementById('plantilla');
-        plantillas.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.id;
-          opt.textContent = p.nombre;
-          selPlant.appendChild(opt);
-        });
-        document.getElementById('plantilla-banner').style.display = 'flex';
-      }
+      // Plantillas: se filtran cuando cambia el proveedor
 
       // Poblar dropdown local
       const selLocal = document.getElementById('local');
@@ -283,9 +273,10 @@
       document.getElementById('form-loader').style.display = 'none';
       document.getElementById('oc-form').style.display     = 'block';
 
-      // Cuando cambia el proveedor, actualizar dropdowns de insumos en todas las filas
+      // Cuando cambia el proveedor: actualizar insumos y plantillas
       document.getElementById('proveedor').addEventListener('change', () => {
         document.querySelectorAll('.insumo-sel').forEach(sel => refreshInsumoOptions(sel));
+        refreshPlantillaOptions();
       });
 
       addRow(); // primera fila vacía
@@ -316,6 +307,22 @@
       sel.appendChild(opt);
     });
     sel.value = currentVal; // mantener selección si sigue siendo válida
+  }
+
+  // ── Refrescar dropdown de plantillas según proveedor ───────────────────────
+  function refreshPlantillaOptions() {
+    const provId = document.getElementById('proveedor').value;
+    const banner = document.getElementById('plantilla-banner');
+    const sel    = document.getElementById('plantilla');
+    const filtered = plantillas.filter(p => p.proveedor_id === provId);
+    sel.innerHTML = '<option value="">— Cargar desde plantilla (opcional) —</option>';
+    filtered.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nombre;
+      sel.appendChild(opt);
+    });
+    banner.style.display = filtered.length > 0 ? 'flex' : 'none';
   }
 
   // ── Aplicar plantilla ───────────────────────────────────────────────────────
