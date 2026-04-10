@@ -265,6 +265,13 @@
       document.getElementById('recepcion-form').style.display = 'block';
 
       sel.addEventListener('change', onOCChange);
+
+      // Auto-seleccionar si viene con ?oc= en la URL
+      const paramOC = new URLSearchParams(window.location.search).get('oc');
+      if (paramOC) {
+        const found = ocs.find(oc => oc.oc_id === paramOC);
+        if (found) { sel.value = found.page_id; onOCChange(); }
+      }
     } catch (e) {
       document.getElementById('form-loader').textContent =
         '⚠️ Error al cargar datos. Recargá la página.';
