@@ -483,6 +483,9 @@
       body += `<div class="modal-section"><div class="modal-section-title">Notas</div><div class="notas-box">${oc.notas}</div></div>`;
     }
     if (!body) body = '<p style="color:#aaa;font-size:.88rem">Sin detalles adicionales.</p>';
+    if (oc.estado.toLowerCase() === 'pendiente') {
+      body += `<div style="margin-top:16px"><a href="recepcion.html?oc=${encodeURIComponent(oc.oc_id)}" style="display:block;background:#222;color:#fff;text-align:center;padding:12px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.9rem">Registrar recepción →</a></div>`;
+    }
     document.getElementById('modal-body').innerHTML = body;
     document.getElementById('modal-backdrop').classList.add('open');
   }
