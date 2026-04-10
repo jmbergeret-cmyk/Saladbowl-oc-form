@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard OC — CV</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .top-bar {
+      background: #111;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-bar h1 { font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
+    .top-bar .top-date { font-size: .8rem; color: #aaa; }
+
+    .week-tabs {
+      background: #1a1a1a;
+      display: flex;
+      padding: 0 20px;
+      gap: 4px;
+    }
+    .week-tab {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: .8rem;
+      font-weight: 600;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .week-tab:hover { color: #ccc; }
+    .week-tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+
+    .container { max-width: 820px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    /* ── Sección HOY ── */
+    .section-label {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .section-label.today-label { color: #d97706; }
+
+    .hoy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .oc-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 5px rgba(0,0,0,.07);
+      cursor: pointer;
+      transition: box-shadow .15s, transform .1s;
+      border-top: 3px solid #e5e7eb;
+    }
+    .oc-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.12); transform: translateY(-1px); }
+    .oc-card.hoy { border-top-color: #f59e0b; }
+    .oc-card.recibida { border-top-color: #22c55e; }
+    .oc-card.diferencias { border-top-color: #ef4444; }
+
+    .oc-card .proveedor { font-size: .95rem; font-weight: 700; color: #111; margin-bottom: 4px; }
+    .oc-card .oc-meta { font-size: .78rem; color: #888; margin-bottom: 8px; }
+    .oc-card .items-preview { font-size: .8rem; color: #555; line-height: 1.5; }
+    .oc-card .items-preview .more { color: #aaa; font-style: italic; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-weight: 600;
+    }
+    .badge-pendiente   { background: #fef3c7; color: #92400e; }
+    .badge-recibida    { background: #d1fae5; color: #065f46; }
+    .badge-diferencias { background: #fee2e2; color: #991b1b; }
+    .badge-borrador    { background: #e5e7eb; color: #4b5563; }
+    .badge-default     { background: #f3f4f6; color: #6b7280; }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .day-col {
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .day-col.today .day-header { background: #f59e0b; color: #fff; }
+
+    .day-header {
+      background: #f5f5f5;
+      text-align: center;
+      padding: 8px 4px 6px;
+      font-size: .65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #666;
+    }
+    .day-header .day-num {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #222;
+      margin-top: 1px;
+      line-height: 1;
+    }
+    .day-col.today .day-header .day-num { color: #fff; }
+
+    .day-events { padding: 6px; min-height: 60px; }
+
+    .day-event {
+      background: #fef3c7;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      padding: 5px 6px;
+      margin-bottom: 5px;
+      font-size: .72rem;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      transition: opacity .1s;
+      line-height: 1.3;
+    }
+    .day-event:hover { opacity: .8; }
+    .day-event.recibida { background: #d1fae5; border-left-color: #22c55e; }
+    .day-event.diferencias { background: #fee2e2; border-left-color: #ef4444; }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .modal-header {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      border-radius: 16px 16px 0 0;
+    }
+    .modal-header .m-proveedor { font-size: 1.15rem; font-weight: 800; color: #111; }
+    .modal-header .m-meta { font-size: .82rem; color: #888; margin-top: 4px; }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #555;
+    }
+    .modal-close:hover { background: #e0e0e0; }
+    .modal-body { padding: 16px 20px 24px; }
+
+    .modal-section { margin-bottom: 16px; }
+    .modal-section-title {
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .linea-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: .85rem;
+    }
+    .linea-row:last-child { border-bottom: none; }
+    .linea-producto { color: #333; flex: 1; }
+    .linea-cant { font-weight: 600; color: #111; white-space: nowrap; margin-left: 12px; }
+    .linea-cant.recibida { color: #16a34a; }
+    .linea-cant.parcial  { color: #d97706; }
+
+    .notas-box {
+      background: #fffbeb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: .84rem;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .loader { text-align: center; padding: 60px 0; color: #aaa; font-size: .9rem; }
+    .empty-day { text-align: center; padding: 10px 6px; color: #ccc; font-size: .7rem; }
+    .empty-section { background: #fff; border-radius: 12px; padding: 30px; text-align: center; color: #bbb; font-size: .88rem; margin-bottom: 20px; }
+
+    .refresh-btn {
+      display: block;
+      width: 100%;
+      background: none;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: .85rem;
+      color: #888;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 8px;
+    }
+    .refresh-btn:hover { border-color: #999; color: #444; }
+
+    @media (max-width: 600px) {
+      .week-grid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .day-header { font-size: .55rem; padding: 6px 2px 4px; }
+      .day-header .day-num { font-size: .95rem; }
+      .day-event { font-size: .65rem; padding: 4px 4px; }
+      .hoy-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>📋 CV — Órdenes de Compra</h1>
+  <span class="top-date" id="top-date"></span>
+</div>
+
+<div class="week-tabs">
+  <button class="week-tab active" onclick="switchWeek(0)">Esta semana</button>
+  <button class="week-tab" onclick="switchWeek(7)">Semana próxima</button>
+</div>
+
+<div class="container">
+  <div id="main-content">
+    <div class="loader">Cargando órdenes…</div>
+  </div>
+  <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
+</div>
+
+<!-- Modal detalle OC -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="m-proveedor" id="m-proveedor"></div>
+      <div class="m-meta" id="m-meta"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+  const DASHBOARD_URL = 'https://juanautomatationai.app.n8n.cloud/webhook/wf-dashboard';
+  const LOCAL_FILTER  = 'Saladbowl CV';
+  const DIAS_CORTO  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const DIAS_LARGO  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const MESES       = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  let allOCs     = [];
+  let today      = '';
+  let weekOffset = 0; // 0 = esta semana, 7 = semana próxima
+
+  function isoDate(date) {
+    return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+  }
+
+  function isoToday() {
+    return isoDate(new Date());
+  }
+
+  function formatFechaLarga(iso) {
+    if (!iso) return '—';
+    const [y,m,d] = iso.split('-').map(Number);
+    return DIAS_LARGO[new Date(y,m-1,d).getDay()] + ' ' + d + ' de ' + MESES[m-1];
+  }
+
+  function getMondayOfWeek(offsetDays) {
+    const base = new Date();
+    base.setDate(base.getDate() + offsetDays);
+    const dow = base.getDay();
+    base.setDate(base.getDate() - (dow === 0 ? 6 : dow - 1));
+    base.setHours(0, 0, 0, 0);
+    return base;
+  }
+
+  function cardClass(estado) {
+    const e = (estado||'').toLowerCase();
+    if (e.includes('diferencia')) return 'diferencias';
+    if (e === 'recibida') return 'recibida';
+    if (e === 'pendiente') return 'hoy';
+    return '';
+  }
+
+  function badgeClass(estado) {
+    const e = (estado||'').toLowerCase();
+    if (e === 'pendiente')        return 'badge-pendiente';
+    if (e === 'recibida')         return 'badge-recibida';
+    if (e.includes('diferencia')) return 'badge-diferencias';
+    if (e === 'borrador')         return 'badge-borrador';
+    return 'badge-default';
+  }
+
+  function makeOCCard(oc) {
+    const div = document.createElement('div');
+    div.className = 'oc-card ' + cardClass(oc.estado);
+    div.onclick = () => openModal(oc);
+    const preview = oc.lineas.slice(0, 3).map(l =>
+      `<div>• ${l.producto}: <strong>${l.cantidad_pedida} ${l.unidad}</strong></div>`
+    ).join('');
+    const more = oc.lineas.length > 3 ? `<div class="more">+${oc.lineas.length - 3} más…</div>` : '';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div class="proveedor">${oc.proveedor}</div>
+        <span class="badge ${badgeClass(oc.estado)}">${oc.estado}</span>
+      </div>
+      <div class="oc-meta">${oc.oc_id} · ${formatFechaLarga(oc.fecha_entrega)}</div>
+      <div class="items-preview">${preview}${more}</div>
+    `;
+    return div;
+  }
+
+  function makeWeekCalendar(ocs) {
+    const wrap = document.createElement('div');
+    const monday = getMondayOfWeek(weekOffset);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d);
+    }
+
+    const label = document.createElement('p');
+    label.className = 'section-label';
+    label.textContent = weekOffset === 0 ? 'Semana' : 'Semana próxima';
+    wrap.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'week-grid';
+
+    days.forEach(day => {
+      const iso = isoDate(day);
+      const isToday = iso === today;
+      const col = document.createElement('div');
+      col.className = 'day-col' + (isToday ? ' today' : '');
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      header.innerHTML = `${DIAS_CORTO[day.getDay()]}<span class="day-num">${day.getDate()}</span>`;
+      col.appendChild(header);
+      const events = document.createElement('div');
+      events.className = 'day-events';
+      const dayOCs = ocs.filter(oc => oc.fecha_entrega === iso);
+      if (dayOCs.length === 0) {
+        events.innerHTML = '<div class="empty-day">—</div>';
+      } else {
+        dayOCs.forEach(oc => {
+          const ev = document.createElement('div');
+          ev.className = 'day-event ' + cardClass(oc.estado);
+          ev.textContent = oc.proveedor;
+          ev.onclick = () => openModal(oc);
+          events.appendChild(ev);
+        });
+      }
+      col.appendChild(events);
+      grid.appendChild(col);
+    });
+
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderContent() {
+    const frag = document.createDocumentFragment();
+
+    if (weekOffset === 0) {
+      const hoy = allOCs.filter(oc => oc.fecha_entrega === today);
+      const labelHoy = document.createElement('p');
+      labelHoy.className = 'section-label today-label';
+      labelHoy.textContent = hoy.length > 0 ? 'Hoy' : 'Hoy — sin entregas';
+      frag.appendChild(labelHoy);
+      if (hoy.length > 0) {
+        const grid = document.createElement('div');
+        grid.className = 'hoy-grid';
+        hoy.forEach(oc => grid.appendChild(makeOCCard(oc)));
+        frag.appendChild(grid);
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'empty-section';
+        empty.textContent = 'No hay entregas programadas para hoy.';
+        frag.appendChild(empty);
+      }
+    }
+
+    frag.appendChild(makeWeekCalendar(allOCs));
+
+    const main = document.getElementById('main-content');
+    main.innerHTML = '';
+    main.appendChild(frag);
+  }
+
+  function switchWeek(offset) {
+    weekOffset = offset;
+    document.querySelectorAll('.week-tab').forEach((btn, i) => {
+      btn.classList.toggle('active', (i === 0 && offset === 0) || (i === 1 && offset === 7));
+    });
+    renderContent();
+  }
+
+  function openModal(oc) {
+    document.getElementById('m-proveedor').textContent = oc.proveedor;
+    document.getElementById('m-meta').innerHTML =
+      `${oc.oc_id} &nbsp;·&nbsp; ${formatFechaLarga(oc.fecha_entrega)} &nbsp; <span class="badge ${badgeClass(oc.estado)}">${oc.estado}</span>`;
+    let body = '';
+    if (oc.lineas.length > 0) {
+      body += '<div class="modal-section"><div class="modal-section-title">Ítems del pedido</div>';
+      oc.lineas.forEach(l => {
+        let cantHtml, cantClass = '';
+        if (l.cantidad_recibida !== null) {
+          if (l.cantidad_recibida === l.cantidad_pedida) {
+            cantHtml = `${l.cantidad_recibida} ${l.unidad} ✓`; cantClass = 'recibida';
+          } else {
+            cantHtml = `${l.cantidad_recibida}/${l.cantidad_pedida} ${l.unidad}`; cantClass = 'parcial';
+          }
+        } else {
+          cantHtml = `${l.cantidad_pedida} ${l.unidad}`;
+        }
+        body += `<div class="linea-row"><span class="linea-producto">${l.producto}</span><span class="linea-cant ${cantClass}">${cantHtml}</span></div>`;
+      });
+      body += '</div>';
+    }
+    if (oc.notas) {
+      body += `<div class="modal-section"><div class="modal-section-title">Notas</div><div class="notas-box">${oc.notas}</div></div>`;
+    }
+    if (!body) body = '<p style="color:#aaa;font-size:.88rem">Sin detalles adicionales.</p>';
+    document.getElementById('modal-body').innerHTML = body;
+    document.getElementById('modal-backdrop').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('modal-backdrop')) return;
+    document.getElementById('modal-backdrop').classList.remove('open');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('modal-backdrop').classList.remove('open'); });
+
+  async function loadData() {
+    document.getElementById('main-content').innerHTML = '<div class="loader">Cargando órdenes…</div>';
+    today = isoToday();
+    const now = new Date();
+    document.getElementById('top-date').textContent =
+      DIAS_LARGO[now.getDay()] + ' ' + now.getDate() + ' de ' + MESES[now.getMonth()] + ' ' + now.getFullYear();
+    try {
+      const res  = await fetch(DASHBOARD_URL);
+      const data = await res.json();
+      allOCs = (data.ocs || []).filter(oc => oc.local === LOCAL_FILTER);
+      renderContent();
+    } catch(e) {
+      document.getElementById('main-content').innerHTML =
+        '<div class="empty-section">⚠️ Error al cargar. Tocá "Actualizar" para reintentar.</div>';
+    }
+  }
+
+  loadData();
+</script>
+</body>
+</html>
