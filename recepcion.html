@@ -149,6 +149,34 @@
       cursor: pointer;
     }
 
+    #peso-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    #peso-chips:empty { display: none; }
+    .peso-chip {
+      background: #f0f4ff;
+      border: 1px solid #c5d5f0;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: .82rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #333;
+    }
+    .peso-chip button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #888;
+      font-size: 1rem;
+      padding: 0;
+      line-height: 1;
+    }
+
     @media (max-width: 500px) {
       .items-header { grid-template-columns: 1.5fr 70px 70px 70px 90px; font-size: .65rem; }
       .item-row     { grid-template-columns: 1.5fr 70px 70px 70px 90px; }
@@ -220,7 +248,17 @@
         <label for="foto" class="file-label" id="foto-label">
           📷 Tocá para sacar foto o seleccionar imagen
         </label>
-        <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
+        <input type="file" id="foto" name="foto" accept="image/*" />
+      </div>
+
+      <p class="section-title">Fotos de peso <span style="font-weight:400;text-transform:none;font-size:.8rem">(opcional)</span></p>
+
+      <div class="field">
+        <div id="peso-chips"></div>
+        <label class="file-label" id="add-peso-label" for="foto-peso-trigger">
+          ⚖️ Agregar foto de peso
+        </label>
+        <input type="file" id="foto-peso-trigger" accept="image/*" multiple />
       </div>
 
       <button type="submit" class="btn-submit" id="btn-submit">Confirmar Recepción</button>
@@ -238,6 +276,7 @@
 
   let ocs = [];
   let selectedOC = null;
+  let pesoFiles = [];
 
   // ── Cargar OC pendientes ─────────────────────────────────────────────────────
   async function loadData() {
@@ -362,7 +401,7 @@
     itemsSec.style.display = 'block';
   }
 
-  // ── Foto preview ─────────────────────────────────────────────────────────────
+  // ── Foto remito preview ──────────────────────────────────────────────────────
   document.getElementById('foto').addEventListener('change', function() {
     const label = document.getElementById('foto-label');
     if (this.files && this.files[0]) {
@@ -373,6 +412,32 @@
       label.classList.remove('has-file');
     }
   });
+
+  // ── Fotos de peso ─────────────────────────────────────────────────────────────
+  document.getElementById('foto-peso-trigger').addEventListener('change', function() {
+    for (const f of this.files) pesoFiles.push(f);
+    this.value = '';
+    renderPesoChips();
+  });
+
+  function renderPesoChips() {
+    const chips = document.getElementById('peso-chips');
+    const lbl   = document.getElementById('add-peso-label');
+    chips.innerHTML = '';
+    pesoFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'peso-chip';
+      chip.innerHTML = `⚖️ Foto ${i + 1} — ${f.name} <button type="button" onclick="removePesoFile(${i})">×</button>`;
+      chips.appendChild(chip);
+    });
+    lbl.childNodes[0].textContent = pesoFiles.length > 0 ? '⚖️ Agregar otra foto de peso' : '⚖️ Agregar foto de peso';
+    lbl.classList.toggle('has-file', pesoFiles.length > 0);
+  }
+
+  function removePesoFile(idx) {
+    pesoFiles.splice(idx, 1);
+    renderPesoChips();
+  }
 
   // ── Envío del formulario ─────────────────────────────────────────────────────
   document.getElementById('recepcion-form').addEventListener('submit', async (e) => {
@@ -417,6 +482,7 @@
     fd.append('conforme',     conforme ? 'true' : 'false');
     fd.append('items',        JSON.stringify(items));
     fd.append('foto',         fotoFile);
+    pesoFiles.forEach((f, i) => fd.append(`foto_peso_${i}`, f));
 
     btnSubmit.disabled  = true;
     statusDiv.className = 'status loading';
@@ -433,6 +499,8 @@
         document.getElementById('items-section').style.display = 'none';
         document.getElementById('foto-label').textContent = '📷 Tocá para sacar foto o seleccionar imagen';
         document.getElementById('foto-label').classList.remove('has-file');
+        pesoFiles = [];
+        renderPesoChips();
         selectedOC = null;
       } else {
         throw new Error('HTTP ' + res.status);
